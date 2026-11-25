@@ -1,3 +1,5 @@
+import type { CalibrationRunSnapshot, CalibrationState } from './calibration'
+
 export type PieceKind = 'domino' | 'ramp' | 'splitter' | 'trigger'
 export type Axis = 'north' | 'east' | 'south' | 'west'
 
@@ -28,6 +30,7 @@ export interface MechanismConnection {
 export interface SceneSettings {
   gravity: number
   friction: number
+  groundId: string
   width: number
   height: number
   showGrid: boolean
@@ -42,6 +45,7 @@ export interface DominoDocument {
   connections: MechanismConnection[]
   scene: SceneSettings
   startPieceId: string
+  calibration?: CalibrationState
 }
 
 export interface SimulationEvent {
@@ -64,4 +68,6 @@ export interface SimulationRun {
   interruptedPieceId: string | null
   interruptionReason: string | null
   duration: number
+  /** Parameter ensemble/range used for this run; immutable after creation. */
+  calibrationSnapshot?: CalibrationRunSnapshot | null
 }

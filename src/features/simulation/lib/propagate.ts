@@ -1,5 +1,12 @@
 import type { DominoDocument, Piece, SimulationEvent } from '@/shared/document'
-import { nextContact } from '@/features/layout'
+import type { ParameterVector } from '@/shared/calibration'
+import { nextContact } from '@/features/layout/lib/geometry'
+
+interface PropagateOptions {
+  candidate?: ParameterVector | null
+}
+
+const REFERENCE_GROUND_FRICTION = 0.48
 
 interface Scheduled {
   pieceId: string
@@ -8,7 +15,10 @@ interface Scheduled {
   detail: string
 }
 
-export function propagate(document: DominoDocument) {
+export function propagate(document: DominoDocument, options: PropagateOptions = {}) {
+  const candidate = options.candidate ?? null
+  const ground = document.calibration?.grounds.find(item => item.id === document.scene.groundId)
+  const nominalGroundFriction = ground?.friction ?? document.scene.friction
   const queue: Scheduled[] = [{ pieceId: document.startPieceId, time: 0, causeId: null, detail: '手动触发' }]
   const fallen = new Set<string>()
   const events: SimulationEvent[] = []
@@ -49,19 +59,39 @@ export function propagate(document: DominoDocument) {
     }
 
     const available = document.pieces.filter(item => !fallen.has(item.id) && item.id !== piece.id)
-    const surfaceGrip = (document.scene.friction + piece.friction) / 2
-    const reachScale = (0.94 + surfaceGrip * 0.35) * (1.25 - piece.fallThreshold * 0.25)
+    let surfaceGrip: number
+    let reachScale: number
+    let contactAngle = 47
+    let speedFactor = 0.75
+
+    if (candidate) {
+      const fittedGroundMu = Math.max(0.05, Math.min(1.4,
+        candidate.groundFriction * nominalGroundFriction / REFERENCE_GROUND_FRICTION))
+      surfaceGrip = (fittedGroundMu + candidate.pieceFriction) / 2
+      const maxReach = piece.height * (1.02 + 0.34 * surfaceGrip - 0.16 * piece.fallThreshold)
+        + candidate.reachMargin
+      reachScale = maxReach / (piece.height * 1.18)
+      contactAngle = 54
+      speedFactor = 0.56 + 0.42 * surfaceGrip - 0.16 * piece.fallThreshold
+    } else {
+      surfaceGrip = (document.scene.friction + piece.friction) / 2
+      reachScale = (0.94 + surfaceGrip * 0.35) * (1.25 - piece.fallThreshold * 0.25)
+      speedFactor = 0.75 + surfaceGrip * 0.5
+    }
+
     let target: Piece | null = null
     if (piece.kind === 'ramp') {
       target = available.filter(item => item.x > piece.x && Math.abs(item.y - piece.y) < 2.1)
         .sort((a, b) => a.x - b.x || a.id.localeCompare(b.id))[0] ?? null
     } else {
-      target = nextContact(piece, available, reachScale)
+      target = nextContact(piece, available, reachScale, contactAngle)
     }
     if (target) {
       const separation = Math.hypot(piece.x - target.x, piece.y - target.y)
-      const speed = Math.max(1.8, piece.height * document.scene.gravity / 2) * (0.75 + surfaceGrip * 0.5)
-      const travel = Math.max(0.24, separation / speed)
+      const speed = candidate
+        ? Math.max(1.7, piece.height * document.scene.gravity / 2 * speedFactor)
+        : Math.max(1.8, piece.height * document.scene.gravity / 2) * speedFactor
+      const travel = Math.max(0.12, candidate ? 0.105 + 0.055 * target.fallThreshold + separation / speed : Math.max(0.24, separation / speed))
       queue.push({
         pieceId: target.id, time: next.time + travel, causeId: event.id,
         detail: piece.kind === 'splitter' ? '分岔臂接触' : piece.kind === 'ramp' ? '坡面末端接触' : '相邻接触',

@@ -1,8 +1,12 @@
 import { computed, ref, shallowRef, type Ref } from 'vue'
 import type { DominoDocument, SimulationRun } from '@/shared/document'
+import type { CalibrationRunSnapshot } from '@/shared/calibration'
 import { propagate } from '../lib/propagate'
 
-export function useSimulation(document: Ref<DominoDocument>) {
+export function useSimulation(
+  document: Ref<DominoDocument>,
+  calibrationSnapshot?: Ref<CalibrationRunSnapshot | null>,
+) {
   const run = shallowRef<SimulationRun | null>(null)
   const busy = ref(false)
   const issue = ref('')
@@ -15,7 +19,13 @@ export function useSimulation(document: Ref<DominoDocument>) {
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
     try {
       const snapshot = structuredClone(document.value)
-      const result = propagate(snapshot)
+      const calibration = calibrationSnapshot?.value
+        ? structuredClone(calibrationSnapshot.value)
+        : null
+      const candidate = calibration && calibration.feasibleCount > 0
+        ? calibration.selectedCandidate
+        : null
+      const result = propagate(snapshot, { candidate })
       run.value = {
         id: crypto.randomUUID(),
         documentId: snapshot.id,
@@ -27,6 +37,7 @@ export function useSimulation(document: Ref<DominoDocument>) {
         interruptedPieceId: result.interruptedPieceId,
         interruptionReason: result.interruptionReason,
         duration: result.duration,
+        calibrationSnapshot: calibration,
       }
       if (result.status === 'empty') issue.value = '场景里没有可运行的触发点。'
     } catch {

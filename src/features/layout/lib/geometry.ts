@@ -20,7 +20,7 @@ export function angleBetween(a: Vec2, b: Vec2) {
   return Math.acos(dot) * 180 / Math.PI
 }
 
-export function nextContact(source: Piece, candidates: readonly Piece[], reachScale = 1) {
+export function nextContact(source: Piece, candidates: readonly Piece[], reachScale = 1, maxAngle = 47) {
   const facing = forwardVector(source)
   const nearby = candidates
     .filter(piece => piece.id !== source.id)
@@ -28,7 +28,7 @@ export function nextContact(source: Piece, candidates: readonly Piece[], reachSc
       const delta = { x: piece.x - source.x, y: piece.y - source.y }
       return { piece, delta, distance: distance(source, piece), alignment: angleBetween(facing, delta) }
     })
-    .filter(entry => entry.distance < source.height * 1.18 * reachScale && entry.alignment < 47)
+    .filter(entry => entry.distance < source.height * 1.18 * reachScale && entry.alignment < maxAngle)
     .sort((a, b) => a.distance - b.distance || a.piece.id.localeCompare(b.piece.id))
   return nearby[0]?.piece ?? null
 }

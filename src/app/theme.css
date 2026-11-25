@@ -244,6 +244,24 @@ kbd { padding: 2px 5px; border: 1px solid #536357; border-radius: 3px; backgroun
 .empty-orbit i:nth-child(3) { transform: rotate(90deg); border-color: #3d5447; }
 .empty-orbit span { position: absolute; top: 28px; left: 43px; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px #e6bd68aa; }
 
+.run-cal-snapshot { margin: 12px 0 4px; padding: 10px; border: 1px solid #465a4e; border-radius: 5px; background: #1b2b25; }
+.run-cal-head { display: flex; align-items: center; gap: 6px; color: var(--mint); }
+.run-cal-head strong { font-size: 10px; color: var(--ink); }
+.run-cal-head .mono { margin-left: auto; color: var(--gold); font-size: 9px; }
+.run-cal-warning { margin: 7px 0 8px; color: #b9ddc5; font-size: 9px; line-height: 1.45; }
+.run-cal-warning.split { color: #f0d59a; }
+.run-cal-ranges { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 8px; }
+.run-cal-ranges div { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-width: 0; }
+.run-cal-ranges span { color: var(--quiet); font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-cal-ranges code { color: var(--gold); font-size: 8px; }
+.run-cal-snapshot details { margin-top: 8px; }
+.run-cal-snapshot summary { cursor: pointer; color: var(--muted); font-size: 9px; }
+.run-cal-candidate { margin-top: 7px; color: var(--mint); font-size: 8px; line-height: 1.6; }
+.run-cal-holdout { margin-top: 5px; color: var(--cream); font-size: 9px; line-height: 1.5; }
+.run-cal-snapshot ul { margin: 6px 0 0; padding-left: 14px; list-style: disc; color: var(--quiet); font-size: 8px; line-height: 1.6; }
+.run-cal-snapshot > small { display: block; margin-top: 8px; color: var(--quiet); font-size: 8px; line-height: 1.45; }
+.run-cal-missing { margin: 10px 0 2px; color: var(--quiet); font-size: 9px; }
+
 .statusbar { height: 29px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; border-top: 1px solid var(--rule-soft); color: #728077; font: 8px var(--mono); letter-spacing: .09em; }
 .statusbar span:first-child { display: flex; align-items: center; gap: 7px; color: #aab4a8; }
 .statusbar svg { color: var(--gold); }

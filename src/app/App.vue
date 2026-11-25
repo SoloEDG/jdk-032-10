@@ -6,11 +6,32 @@ import { MechanismPanel } from '@/features/mechanisms'
 import { ScenePanel } from '@/features/scene'
 import { SimulationBar } from '@/features/simulation'
 import { ReplayPanel } from '@/features/replay'
+import { CalibrationPanel } from '@/features/calibration'
 import { useWorkspace } from './useWorkspace'
 
 const {
-  document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, place, move, focusEvent,
+  document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review,
+  calibration, runSimulation, place, move, focusEvent,
 } = useWorkspace()
+const {
+  state: calibrationState,
+  selectedSample: calibrationSelectedSample,
+  fit: calibrationFit,
+  fitting: calibrationFitting,
+  dirty: calibrationDirty,
+  runSnapshot: calibrationSnapshot,
+  selectSample: selectCalibrationSample,
+  updateSample: updateCalibrationSample,
+  updateCommon: updateCalibrationCommon,
+  updateNode: updateCalibrationNode,
+  updateOrder: updateCalibrationOrder,
+  addSample: addCalibrationSample,
+  importFromWorkspace: importCalibrationSample,
+  duplicateSample: duplicateCalibrationSample,
+  removeSample: removeCalibrationSample,
+  setHoldout: setCalibrationHoldout,
+  refit: refitCalibration,
+} = calibration
 const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : saveState.value === 'saving' ? '保存中' : '尚未保存')
 </script>
 
@@ -47,7 +68,7 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
           :run="simulation.run.value" :focus-piece-id="focusPieceId" @place="place" @select="layout.select"
           @move="move" />
         <SimulationBar :run="simulation.run.value" :stale="simulation.stale.value" :busy="simulation.busy.value"
-          :issue="simulation.issue.value" @run="simulation.simulate" @reset="simulation.clear" />
+          :issue="simulation.issue.value" @run="runSimulation" @reset="simulation.clear" />
         <div class="center-footer">
           <span><Cloud :size="13" /> 本机自动保存</span><span class="footer-divider">/</span>
           <span>摆放 {{ document.pieces.length }} 件 · 连线 {{ document.connections.length }} 条</span>
@@ -62,6 +83,28 @@ const saveLabel = computed(() => saveState.value === 'saved' ? '已保存' : sav
           :playing="review.playing.value" :current-event="review.currentEvent.value" :stale="simulation.stale.value"
           @toggle="review.toggle" @seek="review.seek" @restart="review.restart" @event="focusEvent" />
       </aside>
+
+      <CalibrationPanel
+        :state="calibrationState"
+        :selected-sample="calibrationSelectedSample"
+        :fit="calibrationFit"
+        :fitting="calibrationFitting"
+        :dirty="calibrationDirty"
+        :snapshot="calibrationSnapshot"
+        @select="selectCalibrationSample"
+        @refit="refitCalibration"
+        @add-sample="addCalibrationSample"
+        @import="importCalibrationSample"
+        @reset="calibration.resetDefaults"
+        @update-sample="updateCalibrationSample"
+        @update-common="updateCalibrationCommon"
+        @update-node="updateCalibrationNode"
+        @update-order="updateCalibrationOrder"
+        @duplicate="duplicateCalibrationSample"
+        @remove="removeCalibrationSample"
+        @set-holdout="setCalibrationHoldout"
+        @run="runSimulation"
+      />
     </main>
     <footer class="statusbar"><span><AudioWaveform :size="14" /> CHAINLINE FIELD NOTES</span><span>02.4 / MOTION STUDY</span><span>LOCAL PROJECT</span></footer>
   </div>

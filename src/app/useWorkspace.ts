@@ -6,6 +6,8 @@ import { useMechanisms } from '@/features/mechanisms'
 import { useScene, clampToScene } from '@/features/scene'
 import { useSimulation } from '@/features/simulation'
 import { useReview } from '@/features/replay'
+import { useCalibration } from '@/features/calibration'
+import { createDefaultCalibrationState } from '@/shared/calibration'
 
 const storageKey = 'chainline-jdk032-project-v1'
 
@@ -13,9 +15,21 @@ function loadProject() {
   try {
     const saved = localStorage.getItem(storageKey)
     if (!saved) return createDefaultDocument()
-    const parsed = JSON.parse(saved) as DominoDocument
+    const parsed = JSON.parse(saved) as Partial<DominoDocument>
     if (!Array.isArray(parsed.pieces) || !Array.isArray(parsed.connections) || !parsed.scene) return createDefaultDocument()
-    return parsed
+    const fallbackGroundId = parsed.scene.friction >= 0.75 ? 'rubber' : parsed.scene.friction >= 0.57 ? 'felt' : 'oak'
+    return {
+      ...createDefaultDocument(),
+      ...parsed,
+      scene: {
+        ...createDefaultDocument().scene,
+        ...parsed.scene,
+        groundId: parsed.scene.groundId ?? fallbackGroundId,
+      },
+      calibration: parsed.calibration && Array.isArray(parsed.calibration.samples)
+        ? parsed.calibration
+        : createDefaultCalibrationState(),
+    } as DominoDocument
   } catch {
     return createDefaultDocument()
   }
@@ -39,8 +53,14 @@ export function useWorkspace() {
   const layout = useLayout(document, changed)
   const mechanisms = useMechanisms(document, changed)
   const scene = useScene(document, changed)
-  const simulation = useSimulation(document)
+  const calibration = useCalibration(document, changed)
+  const simulation = useSimulation(document, calibration.runSnapshot)
   const review = useReview(simulation.run)
+
+  async function runSimulation() {
+    await calibration.refitIfDirty()
+    await simulation.simulate()
+  }
 
   watch(document, next => {
     saveState.value = 'saving'
@@ -87,11 +107,17 @@ export function useWorkspace() {
       layout.handleKey(event)
     }
   }
-  onMounted(() => window.addEventListener('keydown', onKeydown))
+  onMounted(() => {
+    window.addEventListener('keydown', onKeydown)
+    void calibration.refit()
+  })
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKeydown)
     window.clearTimeout(saveTimer)
   })
 
-  return { document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review, place, move, focusEvent }
+  return {
+    document, saveState, focusPieceId, layout, mechanisms, scene, simulation, review,
+    calibration, runSimulation, place, move, focusEvent,
+  }
 }
